@@ -1,0 +1,41 @@
+﻿@inherits LayoutComponentBase
+
+@*<div class="sidebar">
+    <NavMenu />
+</div>*@
+
+<header class="header">
+    <div class="header-container">
+        <a href="/" class="logo">
+            <img src="logo.png" />
+            <div class="logo-text">BorovClub</div>
+        </a>
+        <div class="wrap">
+            <div class="search">
+                <input type="text" class="searchTerm" placeholder="What are you looking for?">
+                <button type="submit" class="searchButton">
+                    <i class="fa fa-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="profile">
+        </div>
+        <div class="user-links">
+            <LoginDisplay />
+            <a href="https://docs.microsoft.com/en-us/aspnet/" target="_blank">About</a>
+        </div>
+    </div>
+</header>
+
+<main class="content">
+    <div class="container">
+        <AuthorizeView>
+            <Authorized>
+                <NavBar Username="@context.User.Identity.Name" />
+            </Authorized>
+        </AuthorizeView>
+        <div class="component">
+            @Body
+        </div>
+    </div>
+</main>

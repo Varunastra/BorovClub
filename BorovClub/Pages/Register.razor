@@ -1,0 +1,46 @@
+﻿@page "/register"
+@using BorovClub.Models;
+@inject AccountService service;
+@inject IJSRuntime JSruntime;
+@inject NavigationManager navManager;
+@inject AuthenticationStateProvider AuthenticationStateProvider;
+<EditForm Model="@model" class="account-container" OnValidSubmit="@HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <div>Username</div>
+    <InputText @bind-Value="@model.UserName" />
+    <div>Password</div>
+    <InputText type="password" @bind-Value="@model.Password" />
+    <div>First Name</div>
+    <InputText @bind-Value="@model.FirstName" />
+    <div>Last Name</div>
+    <InputText @bind-Value="@model.LastName" />
+    <div>Email</div>
+    <InputText @bind-Value="@model.Email" />
+    <button type="submit">Register</button>
+    <ValidationSummary />
+</EditForm>
+
+@code {
+    UserRegister model = new UserRegister();
+    private bool hasErrors = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity.IsAuthenticated)
+        {
+            navManager.NavigateTo("/");
+        }
+    }
+
+    private async void HandleValidSubmit()
+    {
+        await JSruntime.InvokeVoidAsync("openLoadingModal");
+        var registerStatus = await service.userRegister(model);
+        if (registerStatus)
+        {
+            navManager.NavigateTo("/");
+        }
+        await JSruntime.InvokeVoidAsync("closeLoadingModal");
+    }
+}

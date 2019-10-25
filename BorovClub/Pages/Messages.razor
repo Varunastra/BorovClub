@@ -1,0 +1,29 @@
+﻿@page "/messages"
+@using BorovClub.Data;
+@using BorovClub.Models;
+@inject MessageService service;
+
+<h2>Messages</h2>
+@if (messages != null)
+{
+    <div class="messages">
+        @foreach (Message msg in messages)
+        {
+            <div class="message-box">
+                <div class="sender-info">
+                    <div class="message-sender">@msg.Sender.UserName</div>
+                    <div class="avatar"><img src="@msg.Sender.AvatarPath" /></div>
+                </div>
+                <div class="last-message">@msg.Text</div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private ICollection<Message> messages;
+    protected override void OnInitialized()
+    {
+        messages = service.viewMessages();
+    }
+}

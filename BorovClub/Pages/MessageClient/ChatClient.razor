@@ -1,0 +1,40 @@
+﻿@page "/messages/{Reciever}"
+@inject IJSRuntime JSruntime;
+@attribute [Authorize]
+<AuthorizeView>
+    <Authorized>
+        <div class="chat-window">
+            <h3>Chat with @Reciever</h3>
+            <input type="text" @bind="@Message" />
+            <input type="button" id="sendMessage" value="Send" class="btn btn-primary" @onclick="@SendMessage" />
+            <ul id="discussion" />
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <h1>Authorize first</h1>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    [CascadingParameter] Task<AuthenticationState> authenticationStateTask { get; set; }
+    [Parameter]
+    public string Reciever { get; set; }
+    string Message = "";
+    IList<string> messages = new List<string>();
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            JSruntime.InvokeVoidAsync("setupChatConnection");
+        }
+    }
+
+
+    async Task SendMessage()
+    {
+        var authState = await authenticationStateTask;
+        var user = authState.User;
+        await JSruntime.InvokeAsync<string>("sendMessageToUser", Reciever, Message);
+    }
+}

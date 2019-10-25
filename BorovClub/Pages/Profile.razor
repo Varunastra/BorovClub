@@ -1,0 +1,79 @@
+﻿@page  "/{Username}"
+@using BorovClub.Models;
+@using BorovClub.Data;
+@using Microsoft.EntityFrameworkCore;
+@inject AccountService service;
+@inject FriendshipService friendsService;
+
+<div class="profile-background"></div>
+@if (user != null)
+{
+    <div class="profile">
+        <img class="avatar" src="@user.AvatarPath" />
+        <div>@user.FirstName</div>
+        <div>@user.LastName</div>
+        <div class="user-friends">
+            @*@foreachs (ApplicationUser friend in user.FriendsList)
+            {
+                <div>@friend.FirstName @friend.LastName</div>
+                <img src="@friend.AvatarPath" />
+            }*@
+        </div>
+        <div></div>
+        <div></div>
+        <AuthorizeView>
+            <Authorized>
+                @switch (friendStatus)
+                {
+                    case FriendshipStatus.NotExist:
+                        <button @onclick="@onAddClicked">Add To Friends</button>
+                        break;
+                    case FriendshipStatus.Approved:
+                        <div>You are already friends</div>
+                        <div>
+                            <button @onclick="@onRemoveClicked">Remove Friend</button>
+                        </div>
+                        break;
+                    case FriendshipStatus.Pending:
+                        <div>Request sent</div>
+                        break;
+                    default:
+                        break;
+                }
+                <div class="send-message"><a href="@("messages/" + Username)">Send Message</a></div>
+            </Authorized>
+        </AuthorizeView>
+    </div>
+}
+else
+{
+    <h2>User Not Found</h2>
+}
+
+@code {
+    [Parameter]
+    public string Username { get; set; }
+
+    private ApplicationUser user;
+    private FriendshipStatus friendStatus;
+    private string messageUrl;
+
+    protected override void OnInitialized()
+    {
+        user = service.getUser(Username);
+        if (user != null)
+        {
+            friendStatus = friendsService.getFriendshipStatus(user);
+        }
+    }
+
+    public void onAddClicked()
+    {
+        friendsService.addFriend(user);
+    }
+
+    public void onRemoveClicked()
+    {
+        friendsService.removeFriend(user);
+    }
+}

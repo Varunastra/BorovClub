@@ -1,0 +1,38 @@
+﻿@page "/login"
+@using BorovClub.Models;
+@inject AccountService service;
+@inject IJSRuntime JsRuntime;
+
+<EditForm Model="@model" class="account-container" OnValidSubmit="@HandleValidSubmit">
+    <div class="login-text">Login</div>
+    <div><InputText class="login-input" @bind-Value="@model.UserName" /></div>
+    <div class="login-password">Password</div>
+    <div><InputText type="password" @bind-Value="@model.Password" /></div>
+    <div><button type="submit">Login</button></div>
+    @if (error)
+    {
+    <div class="validation-message">Wrong username or password</div>
+    }
+</EditForm>
+
+@code {
+    UserLogin model = new UserLogin();
+    private string token;
+    public bool error = false;
+
+    private async void HandleValidSubmit()
+    {
+        await JsRuntime.InvokeVoidAsync("openLoadingModal");
+        token = await service.userLogin(model);
+        if (token != null)
+        {
+            await JsRuntime.InvokeAsync<string>("setCookieAuth", token);
+        }
+        else
+        {
+            await JsRuntime.InvokeVoidAsync("closeLoadingModal");
+            error = true;
+            StateHasChanged();
+        }
+    }
+}

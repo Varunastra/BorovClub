@@ -1,0 +1,39 @@
+﻿@page "/friends";
+@using BorovClub.Data;
+@using BorovClub.Models;
+@inject FriendshipService friendsService;
+<h2>Friends</h2>
+@if (friendsList != null)
+{
+    foreach (ApplicationUser user in friendsList)
+    {
+        <div class="friend-name"><a href="@("/"+ @user.UserName)">@user.FirstName @user.LastName</a></div>
+        <div class="avatar"><img src="@user.AvatarPath"/></div>
+    }
+}
+<h2>Requests</h2>
+@if (requestsList != null)
+{
+    foreach (ApplicationUser user in requestsList)
+    {
+        <div>@user.FirstName @user.LastName</div>
+        <button @onclick="@(e => addUser(user))">Add User</button>
+    }
+}
+
+
+@code {
+    private IEnumerable<ApplicationUser> friendsList;
+    private IEnumerable<ApplicationUser> requestsList;
+
+    protected override void OnInitialized()
+    {
+        friendsList = friendsService.getFriends();
+        requestsList = friendsService.getRequests();
+    }
+
+    public void addUser(ApplicationUser reciever)
+    {
+        friendsService.addFriend(reciever);
+    }
+}

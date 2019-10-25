@@ -1,0 +1,10 @@
+﻿@page "/logout"
+@inject IJSRuntime JSRuntime;
+@inject AccountService service;
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await service.userLogout();
+        await JSRuntime.InvokeVoidAsync("cookieLogout");
+    }
+}
