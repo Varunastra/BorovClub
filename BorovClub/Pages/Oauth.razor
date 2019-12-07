@@ -1,0 +1,93 @@
+﻿@page "/oauth"
+@using BorovClub.Models;
+@using Microsoft.Extensions.Configuration;
+@using Microsoft.AspNetCore.WebUtilities;
+@using System.Net.Http.Headers;
+@using System.Text.Json;
+@using Microsoft.Extensions.Logging;
+@using Microsoft.Extensions.Primitives;
+@inject IJSRuntime jsRuntime
+@inject IConfiguration configuration
+@inject IHttpClientFactory httpClient
+@inject AccountService accountService
+@inject NavigationManager navManager
+@inject ILogger<Oauth> logger
+
+@code {
+    string ClientID, ClientSecret;
+    GoogleUser userInfo;
+
+    protected override void OnInitialized()
+    {
+        ClientID = configuration["Google:ClientID"];
+        ClientSecret = configuration["Google:ClientSecret"];
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var uri = navManager.ToAbsoluteUri(navManager.Uri).Query;
+            var parsedQuery = QueryHelpers.ParseQuery(uri);
+
+            StringValues code;
+            if (parsedQuery.TryGetValue("code", out code))
+            {
+                if (!StringValues.IsNullOrEmpty(code))
+                {
+                    await OnCodeRecieved(code[0]);
+                }
+            }
+        }
+
+    }
+
+    async Task OnCodeRecieved(string code)
+    {
+        var client = httpClient.CreateClient();
+        var stringContent = new FormUrlEncodedContent(
+            new[]
+            {
+                new KeyValuePair<string, string>("client_id", ClientID),
+                new KeyValuePair<string, string>("client_secret", ClientSecret),
+                new KeyValuePair<string, string>("code", code),
+                new KeyValuePair<string, string>("grant_type", "authorization_code"),
+                new KeyValuePair<string, string>("redirect_uri", "https://borovclub.com/oauth"),
+                new KeyValuePair<string, string>("scope", "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email"),
+                new KeyValuePair<string, string>("access_type", "offline")
+                }
+        );
+        var result = await client.PostAsync("https://accounts.google.com/o/oauth2/token", stringContent);
+        var content = await result.Content.ReadAsStringAsync();
+
+        var tokenModel = JsonSerializer.Deserialize<GoogleOauthModel>(content);
+        logger.LogDebug("Token: " + tokenModel.access_token);
+
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenModel.access_token);
+        var userResponse = await client.GetAsync("https://www.googleapis.com/oauth2/v1/userinfo?alt=json");
+
+        var parsedUser = await userResponse.Content.ReadAsStringAsync();
+        userInfo = JsonSerializer.Deserialize<GoogleUser>(parsedUser);
+
+        var user = await accountService.GetUserByEmail(userInfo.email);
+
+        if (user != null)
+        {
+            var token = accountService.CreateJsonWebToken(user);
+
+            if (token != null)
+            {
+                await jsRuntime.InvokeAsync<string>("setToken", token);
+            }
+        }
+        else
+        {
+            var registerUri = "/register";
+            registerUri = QueryHelpers.AddQueryString(registerUri, new Dictionary<string, string> { { "fullname", userInfo.name } });
+            registerUri = QueryHelpers.AddQueryString(registerUri, new Dictionary<string, string> { { "email", userInfo.email } });
+            navManager.NavigateTo(registerUri);
+        }
+    }
+}
+
+

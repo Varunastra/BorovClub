@@ -2,26 +2,33 @@
   "iisSettings": {
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
+    "iis": {
+      "applicationUrl": "https://borovclub.com",
+      "sslPort": 443
+    },
     "iisExpress": {
-      "applicationUrl": "http://localhost:51157",
-      "sslPort": 44395
+      "applicationUrl": "https://borovclub.com",
+      "sslPort": 443
     }
   },
   "profiles": {
     "IIS Express": {
       "commandName": "IISExpress",
-      "launchBrowser": true,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
-      }
+      },
+      "applicationUrl": "https://borovclub.com;http://borovclub.com;"
     },
     "BorovClub": {
       "commandName": "Project",
       "launchBrowser": true,
-      "applicationUrl": "https://localhost:5001;http://localhost:5000",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
-      }
+      },
+      "applicationUrl": "https://borovclub.com;http://borovclub.com;"
+    },
+    "IIS": {
+      "commandName": "IIS"
     }
   }
 }

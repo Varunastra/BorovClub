@@ -2,9 +2,11 @@
 @inject IJSRuntime JSRuntime;
 @inject AccountService service;
 @code {
-    protected override async Task OnInitializedAsync()
+    protected override void OnAfterRender(bool firstRender)
     {
-        await service.userLogout();
-        await JSRuntime.InvokeVoidAsync("cookieLogout");
+        if (firstRender)
+        {
+            JSRuntime.InvokeVoidAsync("removeToken");
+        }
     }
 }

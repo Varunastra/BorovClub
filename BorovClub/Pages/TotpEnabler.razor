@@ -1,0 +1,25 @@
+﻿@inject AccountService service;
+
+<div class="totp-setup">
+@if (QRCode != null)
+{
+    <div><img class="qrcode" src="@("data:image/png;base64, " + QRCode)" /></div>
+    <div><h5>Scan this QRCode with your Auth App</h5></div>
+}
+else
+{
+    <div><h3>Enter your secret key(and don't share it with anyone)</h3></div>
+    <div><input type="password" @bind-value="@secret" /></div>
+    <div><button @onclick="@GenerateClicked">Enable TOTP</button></div>   
+}
+</div>
+
+@code {
+    string QRCode;
+    string secret;
+
+    async Task GenerateClicked()
+    {
+        QRCode = await service.GenerateQRCode(secret);
+    }
+}

@@ -1,19 +1,21 @@
-﻿@inject IJSRuntime JSruntime;
+﻿@using BorovClub.Models;;
+@using BorovClub.Data;
+@using BlazorInputFile;
+@inject IJSRuntime JSruntime;
 @inject AccountService service;
-@using BorovClub.Models;
+@inject UploadService uploadService;
+@inject NavigationManager navMan;
+
 <div class="navbar">
     <div class="navbar-short-summary">
         <div class="avatar"><img id="avatar-image" src="@user.AvatarPath" /></div>
         <label for="avatar-input" class="custom-input"></label>
-        <input type="file" name="file" id="avatar-input" />
         <div class="nickname">@user.FirstName @user.LastName</div>
+        <InputFile OnChange="@HandleSelection" id="avatar-input" />
     </div>
     <ul class="navbar-links">
         <li>
             <a href="messages">Messages</a>
-        </li>
-        <li>
-            <a href="profiles">Profile</a>
         </li>
         <li>
             <a href="friends">Friends</a>
@@ -27,18 +29,22 @@
 @code {
     [Parameter]
     public string Username { get; set; }
+
     ApplicationUser user;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    async Task HandleSelection(IFileListEntry[] files)
     {
-        if (firstRender)
-        {
-            await JSruntime.InvokeVoidAsync("avatarOnChange");
-        }
+        var result = await uploadService.UploadAvatar(files);
+        StateHasChanged();
     }
 
     protected override void OnInitialized()
     {
-        user = service.getUser(Username);
+        user = service.GetUser(Username);
+    }
+
+    void onMessageClicked()
+    {
+        navMan.NavigateTo("/messages", true);
     }
 }

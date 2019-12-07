@@ -5,6 +5,8 @@ VisualStudioVersion = 16.0.29230.61
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BorovClub", "BorovClub\BorovClub.csproj", "{FC61CA67-3A83-400E-A541-C7630C417009}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BorovClub.Tests", "BorovClub.Tests\BorovClub.Tests.csproj", "{42550EBF-B0B6-4612-90CC-EF4F5C4FB0A1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{FC61CA67-3A83-400E-A541-C7630C417009}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FC61CA67-3A83-400E-A541-C7630C417009}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FC61CA67-3A83-400E-A541-C7630C417009}.Release|Any CPU.Build.0 = Release|Any CPU
+		{42550EBF-B0B6-4612-90CC-EF4F5C4FB0A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{42550EBF-B0B6-4612-90CC-EF4F5C4FB0A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{42550EBF-B0B6-4612-90CC-EF4F5C4FB0A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{42550EBF-B0B6-4612-90CC-EF4F5C4FB0A1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

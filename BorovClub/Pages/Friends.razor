@@ -2,38 +2,89 @@
 @using BorovClub.Data;
 @using BorovClub.Models;
 @inject FriendshipService friendsService;
-<h2>Friends</h2>
-@if (friendsList != null)
+
+<div class="dropdown">
+    <select @onchange="@OptionSelected">
+        <option value="Friends">Friends</option>
+        <option value="Requests">Requests</option>
+    </select>
+</div>
+
+@switch (currentType)
 {
-    foreach (ApplicationUser user in friendsList)
-    {
-        <div class="friend-name"><a href="@("/"+ @user.UserName)">@user.FirstName @user.LastName</a></div>
-        <div class="avatar"><img src="@user.AvatarPath"/></div>
-    }
-}
-<h2>Requests</h2>
-@if (requestsList != null)
-{
-    foreach (ApplicationUser user in requestsList)
-    {
-        <div>@user.FirstName @user.LastName</div>
-        <button @onclick="@(e => addUser(user))">Add User</button>
-    }
+    case "Friends":
+        {
+            <h2>Friends</h2>
+            @if (friendsList != null)
+            {
+                foreach (ApplicationUser user in friendsList)
+                {
+                    <hr class="divider" />
+                    <div class="friend">
+                        <img src="@user.AvatarPath" class="avatar" />
+                        <div class="info">
+                            <a href="@("/" + @user.UserName)" class="friend-name">
+                                @user.FirstName @user.LastName
+                            </a>
+                            <a class="send-message" href="@("/messages/" + @user.UserName)">
+                                Send message
+                            </a>
+                        </div>
+                    </div>
+                    <hr class="divider" />
+                }
+            }
+            break;
+        }
+
+    case "Requests":
+        {
+            <h2>Requests</h2>
+            @if (requestsList != null)
+            {
+                foreach (ApplicationUser user in requestsList)
+                {
+                    <hr class="divider" />
+                    <div class="request">
+                        <img src="@user.AvatarPath" class="avatar" />
+                        <div class="info">
+                            <a href="@("/" + @user.UserName)" class="friend-name">
+                                @user.FirstName @user.LastName
+                            </a>
+                            <button class="add-btn" @onclick="@(e => AddUser(user))">
+                                Add to friends
+                            </button>
+                        </div>
+                    </div>
+                    <hr class="divider" />
+                }
+            }
+            break;
+        }
 }
 
 
 @code {
-    private IEnumerable<ApplicationUser> friendsList;
-    private IEnumerable<ApplicationUser> requestsList;
+    private IList<ApplicationUser> friendsList;
+    private IList<ApplicationUser> requestsList;
+    private string currentType = "Friends";
 
     protected override void OnInitialized()
     {
-        friendsList = friendsService.getFriends();
-        requestsList = friendsService.getRequests();
+        friendsList = friendsService.GetFriends();
+        requestsList = friendsService.GetRequests();
     }
 
-    public void addUser(ApplicationUser reciever)
+    public async Task AddUser(ApplicationUser reciever)
     {
-        friendsService.addFriend(reciever);
+        await friendsService.AddFriend(reciever);
+        friendsList.Add(reciever);
+        requestsList.Remove(reciever);
+    }
+
+    private void OptionSelected(ChangeEventArgs e)
+    {
+        currentType = e.Value.ToString();
+        StateHasChanged();
     }
 }

@@ -1,51 +1,54 @@
-let chatConnection;
+let preventScroll = false;
 
-function getCookie(name) {
-    var value = "; " + document.cookie;
-    var parts = value.split("; " + name + "=");
-    if (parts.length == 2) return parts.pop().split(";").shift();
+function playAlert() {
+    const sound = new Audio("/notification.mp3");
+    sound.play();
 }
 
-window.onload = () => {
-    if (getCookie("token")) {
-        chatConnection = new signalR.HubConnectionBuilder()
-            .withUrl("/messageHub")
-            .configureLogging(signalR.LogLevel.Information)
-            .build();
+function chatEvents(dotnetHelper) {
+    const chat = document.getElementById("chat");
+    const messageInput = document.getElementById("msg-input");
+    const messageBtn = document.getElementById("msg-btn");
 
-        chatConnection.start().then(function () {
-            console.log("connected");
-        });
-
-        chatConnection.on("broadcastMessage", (user, message) => {
-            try {
-                const disc = document.getElementById("discussion");
-                const newNode = document.createElement("li");
-                newNode.innerHTML = `${user}: ${message}`;
-                disc.appendChild(newNode);
-            }
-            catch (error) {
-                if (error.name === "TypeError") {
-                    const notification = new Audio("/notification.mp3");
-                    notification.play();
-                    const msgContainer = document.createElement("div");
-                    msgContainer.classList.add("modal-message");
-                    const msgSender = document.createElement("div");
-                    msgSender.innerHTML = user;
-                    const msgText = document.createElement("div");
-                    msgText.innerHTML = message;
-                    msgContainer.appendChild(msgSender);
-                    msgContainer.appendChild(msgText);
-                    document.body.appendChild(msgContainer);
-                }
-            }
-
-        });
+    function setScrollTop(height) {
+        preventScroll = true;
+        chat.scrollTop = height;
     }
-}
 
-function sendMessageToUser(reciever, message) {
-  chatConnection
-    .invoke("SendMessageToUser", reciever, message)
-    .catch(err => console.error(err.toString()));
+    let pos = chat.scrollHeight;
+
+    setScrollTop(pos);
+
+    chat.addEventListener("scroll", (e) => {
+        if (preventScroll) {
+            preventScroll = false;
+            return;
+        }
+
+        if (chat.scrollTop === 0) {
+            dotnetHelper.invokeMethodAsync("OnChatUp").then((isEmpty) => {
+                if (!isEmpty) {
+                    setScrollTop(pos);
+                }
+            });
+        }
+    });
+
+    messageInput.addEventListener("keypress", e => {
+        if (e.keyCode == '13') {
+            dotnetHelper.invokeMethodAsync("SendMessage", messageInput.value).then(() => {
+                setScrollTop(chat.scrollHeight);
+            });
+        }
+    });
+
+    messageBtn.addEventListener("click", e => {
+        dotnetHelper.invokeMethodAsync("SendMessage", messageInput.value).then(() => {
+            setScrollTop(chat.scrollHeight);
+        });
+    });
+
+    chat.addEventListener("DOMNodeInserted", e => {
+        setScrollTop(chat.scrollHeight);
+    });
 }

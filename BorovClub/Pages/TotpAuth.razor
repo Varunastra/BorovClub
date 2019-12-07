@@ -1,0 +1,57 @@
+﻿@using BorovClub.Models;
+@inject AccountService service;
+@inject IJSRuntime JsRuntime;
+
+<div class="two-factor-auth">
+    <div class="two-factor-container">
+        <form @onsubmit="@ValidateClicked">
+            <h2>Two-Fator Authentication Page</h2>
+            <div>Enter your code:</div>
+            <input class="totp-code" @bind-value="@usercode" />
+            <button>Validate Totp</button>
+        </form>
+        @if (!validateResult)
+        {
+            <div class="validation-message">Wrong code</div>
+        }
+    </div>
+</div>
+
+
+@code {
+
+    string usercode;
+    bool validateResult = true;
+
+    [Parameter]
+    public UserLogin model { get; set; }
+
+    ApplicationUser user;
+
+        protected override async Task OnInitializedAsync()
+        {
+            await JsRuntime.InvokeVoidAsync("closeLoadingModal");
+            user = service.GetUser(model.UserName);
+        }
+
+        async void ValidateClicked()
+        {
+            
+            validateResult = service.ValidateTotp(usercode, user);
+            if (validateResult)
+            {
+                var token = await service.UserLogin(model);
+                if (token != null)
+                {
+                    await JsRuntime.InvokeAsync<string>("setToken", token);
+                }
+                else
+                {
+                    validateResult = false;
+                    StateHasChanged();
+                }
+            }
+            StateHasChanged();
+        }
+
+}

@@ -1,11 +1,12 @@
 ﻿@page "/register"
 @using BorovClub.Models;
+@using Microsoft.AspNetCore.WebUtilities;
+@using Microsoft.Extensions.Primitives;
 @inject AccountService service;
 @inject IJSRuntime JSruntime;
 @inject NavigationManager navManager;
-@inject AuthenticationStateProvider AuthenticationStateProvider;
+
 <EditForm Model="@model" class="account-container" OnValidSubmit="@HandleValidSubmit">
-    <DataAnnotationsValidator />
     <div>Username</div>
     <InputText @bind-Value="@model.UserName" />
     <div>Password</div>
@@ -17,29 +18,55 @@
     <div>Email</div>
     <InputText @bind-Value="@model.Email" />
     <button type="submit">Register</button>
+    <DataAnnotationsValidator />
     <ValidationSummary />
 </EditForm>
 
 @code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authState { get; set; }
+
     UserRegister model = new UserRegister();
-    private bool hasErrors = false;
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        if (authState.User.Identity.IsAuthenticated)
+        var state = await authState;
+        if (state.User.Identity.IsAuthenticated)
         {
             navManager.NavigateTo("/");
         }
+
+        var query = navManager.ToAbsoluteUri(navManager.Uri).Query;
+        var parsedQuery = QueryHelpers.ParseQuery(query);
+
+        StringValues email;
+        if (parsedQuery.TryGetValue("email", out email))
+        {
+            model.Email = email;
+        }
+
+        StringValues fullname;
+        if (parsedQuery.TryGetValue("fullname", out fullname))
+        {
+            var splittedArgs = fullname.FirstOrDefault().Split(" ");
+            model.FirstName = splittedArgs[0];
+            model.LastName = splittedArgs[1];
+        }
+        StateHasChanged();
     }
 
     private async void HandleValidSubmit()
     {
         await JSruntime.InvokeVoidAsync("openLoadingModal");
-        var registerStatus = await service.userRegister(model);
+        var registerStatus = await service.UserRegister(model);
         if (registerStatus)
         {
-            navManager.NavigateTo("/");
+            var token = await service.UserLogin(new UserLogin { UserName = model.UserName, Password = model.Password });
+            if (token != null)
+            {
+                await JSruntime.InvokeAsync<string>("setToken", token);
+                navManager.NavigateTo("/");
+            }
         }
         await JSruntime.InvokeVoidAsync("closeLoadingModal");
     }

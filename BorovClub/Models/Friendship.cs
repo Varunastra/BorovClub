@@ -12,8 +12,8 @@ namespace BorovClub.Models
         Pending,
         NotExist
     }
-       
-    public class Friendship
+
+    public partial class Friendship
     {
         //public int FriendshipId { get; set; }
         public string RecieverId { get; set; }
@@ -28,5 +28,9 @@ namespace BorovClub.Models
 
         public DateTime When { get; set; }
 
+    }
+
+    public partial class Friendship : IAlertHelper
+    {
     }
 }

@@ -10,7 +10,7 @@
     <title>BorovClub</title>
     <base href="~/" />
     <link href="css/styles/style.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="~/css/font-awesome/css/font-awesome.min.css">
 </head>
 <body>
     <div class="loading-container">
@@ -18,13 +18,23 @@
             <div class="lds-dual-ring"></div>
         </div>
     </div>
-    <app>
+    <div class="app">
         @(await Html.RenderComponentAsync<App>(RenderMode.ServerPrerendered))
-    </app>
-    <script src="~/lib/signalr.js"></script>
+    </div>
     <script src="~/lib/js/messageClient.js"></script>
-    <script src="_framework/blazor.server.js"></script>
+    <script src="_framework/blazor.server.js" autostart="false"></script>
+    <script>
+        Blazor.start({
+            configureSignalR: function (builder) {
+                builder.withUrl("_blazor", {
+                    accessTokenFactory: () => localStorage.getItem("token")
+                });
+                builder.configureLogging(2); // LogLevel.Information
+            }
+        });
+    </script>
     <script src="~/lib/js/accountAuth.js"></script>
     <script src="~/lib/js/modalControl.js"></script>
+    <script src="~/lib/js/inputfile.js"></script>
 </body>
 </html>

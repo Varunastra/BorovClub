@@ -1,0 +1,87 @@
+﻿@page "/settings"
+@using BorovClub.Models;
+@inject NavigationManager navManager;
+@inject AccountService service;
+
+<AuthorizeView>
+    <Authorized>
+        <div class="settings-container">
+            <h3>Settings</h3>
+            <div class="user-settings">
+                <div class="setting">
+                    <div class="setting-name">
+                        Change Email
+                    </div>
+                    <div class="setting-email">
+                        <input type="text" @bind-value="@email" />
+                        <button @onclick="@ChangeEmail" class="change-btn">Change</button>
+                    </div>
+                </div>
+                <div class="setting">
+                    <div class="setting-name">
+                        Change Password
+                    </div>
+                    <div class="setting-password">
+                        <div class="password-name">Old password:</div>
+                        <input type="password" @bind-value="@newPassword" />
+                        <div class="password-name">New password:</div>
+                        <input type="password" @bind-value="@oldPassword" />
+                        <button class="change-btn" @onclick="@ChangePassword">Change</button>
+                    </div>
+                </div>
+                <div class="setting">
+                    <div class="setting-name">
+                        Enable Two-Factor Authentication
+                    </div>
+                    <div class="two-factor">
+                        @if (!TwoFactorEnabled)
+                        {
+                            <TotpEnabler />
+                        }
+                        else
+                        {
+                            <h4>Two-Factor already enabled</h4>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <h3>Authorize <a href="/login">first</a></h3>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    ApplicationUser User;
+    string email;
+
+    string oldPassword, newPassword;
+    bool TwoFactorEnabled;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            User = service.GetUser();
+            TwoFactorEnabled = await service.GetTwoFactorStatus();
+            StateHasChanged();
+        }
+    }
+
+    async Task ChangeEmail()
+    {
+        if (!String.IsNullOrEmpty(email))
+        {
+            await service.ChangeEmail(email);
+        }
+    }
+
+    async Task ChangePassword()
+    {
+        if (!String.IsNullOrEmpty(oldPassword) && !String.IsNullOrEmpty(newPassword))
+        {
+            await service.ChangePassword(oldPassword, newPassword);
+        }
+    }
+}

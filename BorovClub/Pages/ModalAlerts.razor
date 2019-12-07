@@ -1,0 +1,70 @@
+﻿@using BorovClub.Models;
+@using BorovClub.Data;
+@using System.Timers;
+@using BorovClub.Models.Toasts;
+@inject AlertService alertService;
+
+@if (ToastList.Any())
+{
+    <div class="toast-container">
+        <CascadingValue Value=this>
+            @foreach (var toast in ToastList.OrderBy(x => x.TimeStamp))
+            {
+                <ModalAlert Info=@toast.ToastInfo ToastId=@toast.Id />
+            }
+        </CascadingValue>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Timeout { get; set; } = 5;
+
+    public List<ToastInstance> ToastList { get; set; } = new List<ToastInstance>();
+
+    protected override void OnInitialized()
+    {
+        alertService.OnShow += ShowToast;
+    }
+
+    public void RemoveToast(Guid toastId)
+    {
+        InvokeAsync(() =>
+        {
+            var toastInstance = ToastList.SingleOrDefault(x => x.Id == toastId);
+            ToastList.Remove(toastInstance);
+            StateHasChanged();
+        });
+    }
+
+    public void ShowToast(IAlertHelper alert, string message)
+    {
+        InvokeAsync(() =>
+        {
+            if (ToastList.Count <= 4)
+            {
+                var toast = new ToastInstance {
+                    Id = Guid.NewGuid(),
+                    TimeStamp = DateTime.Now,
+                    ToastInfo = new ToastInfo {
+                        Avatar = alert.Sender.AvatarPath,
+                        Heading = alert.Sender.FirstName + " " + alert.Sender.LastName,
+                        SenderURL = "/" + alert.Sender.UserName,
+                        Message = message
+                    }
+                };
+
+   
+                ToastList.Add(toast);
+
+                var timeout = Timeout * 1000;
+                var toastTimer = new Timer(timeout);
+                toastTimer.Elapsed += (sender, args) => { RemoveToast(toast.Id); };
+                toastTimer.AutoReset = false;
+                toastTimer.Start();
+
+                StateHasChanged();
+            }
+        });
+    }
+}

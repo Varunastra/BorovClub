@@ -17,13 +17,14 @@ namespace BorovClub.Data
         public DbSet<Friendship> Friendships { get; set; }
         public DbSet<Message> Messages { get; set; }
 
+        public DbSet<Chat> Chats { get; set; }
+
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 
-            //builder.Entity<ApplicationUser>().Ignore(u => u.FriendsList);
-
-            builder.Entity<Message>().HasKey(f => f.MessageId);
+            builder.Entity<Message>().HasKey(f => f.MessageId );
 
             builder.Entity<Message>()
                 .HasOne(m => m.Reciever)
@@ -49,6 +50,26 @@ namespace BorovClub.Data
                 .HasOne(f => f.Sender)
                 .WithMany()
                 .HasForeignKey(f => f.SenderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Chat>().HasKey(c => new { c.SenderId, c.RecieverId });
+
+            builder.Entity<Chat>()
+                .HasOne(c => c.Sender)
+                .WithMany()
+                .HasForeignKey(u => u.SenderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Chat>()
+                .HasOne(c => c.Reciever)
+                .WithMany()
+                .HasForeignKey(u => u.RecieverId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Chat>()
+                .HasOne(c => c.LastMessage)
+                .WithMany()
+                .HasForeignKey(c => c.LastMessageId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }

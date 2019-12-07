@@ -1,14 +1,9 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,12 +11,10 @@ using Microsoft.Extensions.Hosting;
 using BorovClub.Areas.Identity;
 using BorovClub.Data;
 using BorovClub.Models;
-using SamaraClub.Hubs;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Text;
-using System.Net.Http;
-using Blazor.Extensions;
+using Blazored.Toast;
 
 namespace BorovClub
 {
@@ -38,42 +31,64 @@ namespace BorovClub
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(
-                    Configuration.GetConnectionString("DefaultConnection")));
+            services.AddEntityFrameworkNpgsql().AddDbContext<ApplicationDbContext>(opt =>
+            opt.UseNpgsql(Configuration.GetConnectionString("SQLConnection")));
+
             services.AddIdentity<ApplicationUser, IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>();
+            services.AddHostedService<BackgroundMessagesService>();
             services.AddRazorPages();
             services.AddServerSideBlazor();
-            services.AddHttpClient();
             services.AddSignalR();
             services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<ApplicationUser>>();
-            services.AddScoped<AccountService>();
-            services.AddScoped<FriendshipService>();
-            services.AddScoped<MessageService>();
-            services.AddHttpContextAccessor();
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultSignInScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
             })
-            .AddJwtBearer(options => {
-                options.RequireHttpsMetadata = false;
-                options.SaveToken = false;
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    ValidIssuer = Configuration["JWT:Issuer"],
-                    ValidAudience = Configuration["JWT:Audience"],
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["JWT:Key"])),
-                    ClockSkew = TimeSpan.Zero
-                };
-            });
+           .AddJwtBearer(options =>
+           {
+               options.RequireHttpsMetadata = false;
+               options.SaveToken = false;
+               options.TokenValidationParameters = new TokenValidationParameters
+               {
+                   ValidateIssuer = true,
+                   ValidateAudience = true,
+                   ValidateLifetime = true,
+                   ValidateIssuerSigningKey = true,
+                   ValidIssuer = Configuration["JWT:Issuer"],
+                   ValidAudience = Configuration["JWT:Audience"],
+                   IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["JWT:Key"])),
+                   ClockSkew = TimeSpan.Zero
+               };
+               options.Events = new JwtBearerEvents
+               {
+                   OnMessageReceived = context =>
+                   {
+                       var accessToken = context.Request.Query["access_token"];
 
+                       // If the request is for our hub...
+                       var path = context.HttpContext.Request.Path;
+                       if (!string.IsNullOrEmpty(accessToken) &&
+                           path.StartsWithSegments("/_blazor"))
+                       {
+                           // Read the token out of the query string
+                           context.Token = accessToken;
+                       }
+                       return Task.CompletedTask;
+                   }
+               };
+           });
+            services.AddScoped<AlertService>();
+            services.AddScoped<AccountService>();
+            services.AddScoped<FriendshipService>();
+            services.AddScoped<MessageService>();
+            services.AddScoped<UploadService>();
+            services.AddScoped<ConnectionService>();
+            services.AddHttpContextAccessor();
+            services.AddHttpClient();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -92,19 +107,16 @@ namespace BorovClub
                 app.UseHsts();
             }
 
-            app.UseMiddleware<TokenMiddleware>();
             app.UseHttpsRedirection();
             app.UseStaticFiles();
-            app.UseForwardedHeaders();  
+            app.UseForwardedHeaders();
 
             app.UseRouting();
-            app.UseAuthorization();
             app.UseAuthentication();
+            app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapHub<ChatHub>("/messageHub");
-                endpoints.MapControllers();
                 endpoints.MapBlazorHub();
                 endpoints.MapFallbackToPage("/_Host");
             });

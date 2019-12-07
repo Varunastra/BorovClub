@@ -6,6 +6,7 @@ using System.Linq;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace BorovClub.Data
 {
@@ -14,11 +15,15 @@ namespace BorovClub.Data
         private readonly IHttpContextAccessor _httpContext;
         private readonly ApplicationDbContext _dbContext;
         private readonly ApplicationUser user;
+        private readonly ILogger<FriendshipService> _logger;
 
-        public FriendshipService(IHttpContextAccessor httpContext, ApplicationDbContext dbContext)
+        public Dictionary<string, Friendship> FriendshipsQuery = new Dictionary<string, Friendship>();
+
+        public FriendshipService(IHttpContextAccessor httpContext, ApplicationDbContext dbContext, ILogger<FriendshipService> logger)
         {
             _httpContext = httpContext;
             _dbContext = dbContext;
+            _logger = logger;
             var userClaim = _httpContext.HttpContext.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
             if (userClaim != null)
             {
@@ -27,7 +32,7 @@ namespace BorovClub.Data
             }
         }
 
-        public void addFriend(ApplicationUser userToAdd)
+        public async Task<FriendshipStatus> AddFriend(ApplicationUser userToAdd)
         {
             var response = _dbContext.Friendships.Find(userToAdd.Id, user.Id);
             var friendship = new Friendship { Sender = user, Reciever = userToAdd, Status = FriendshipStatus.Pending };
@@ -37,22 +42,41 @@ namespace BorovClub.Data
                 response.Status = FriendshipStatus.Approved;
             }
             _dbContext.Friendships.Add(friendship);
-            _dbContext.SaveChanges();
+            await _dbContext.SaveChangesAsync();
+
+            ConnectionManager.Alert(friendship);
+
+            return friendship.Status;
         }
 
-        public ICollection<ApplicationUser> getRequests()
+        public IList<ApplicationUser> GetRequests()
         {
-            var requests = _dbContext.Friendships.Where(f => f.RecieverId == user.Id && f.Status == FriendshipStatus.Pending).Select(f => f.Sender);
-            return requests.ToList();
+            IList<ApplicationUser> requests = null;
+            try
+            {
+                requests = _dbContext.Friendships.Where(f => f.RecieverId == user.Id && f.Status == FriendshipStatus.Pending).Select(f => f.Sender).ToList();
+            }
+            catch(Exception) {
+                _logger.LogInformation("Requests not found");
+            }
+            return requests;
         }
 
-        public ICollection<ApplicationUser> getFriends()
+        public IList<ApplicationUser> GetFriends()
         {
-            var friends = _dbContext.Friendships.Where(f => f.RecieverId == user.Id && f.Status == FriendshipStatus.Approved).Select(f => f.Sender);
-            return friends.ToList();
+            IList<ApplicationUser> friends = null;
+            try
+            {
+                friends = _dbContext.Friendships.Where(f => f.RecieverId == user.Id && f.Status == FriendshipStatus.Approved).Select(f => f.Sender).ToList();
+            }
+            catch (Exception)
+            {
+                _logger.LogInformation("Friends not found");
+            }
+            return friends;
         }
 
-        public FriendshipStatus getFriendshipStatus(ApplicationUser userToCheck)
+        public FriendshipStatus GetFriendshipStatus(ApplicationUser userToCheck)
         {
             if (_httpContext.HttpContext.User.Identity.IsAuthenticated)
             {
@@ -65,13 +89,14 @@ namespace BorovClub.Data
             return FriendshipStatus.NotExist;
         }
 
-        public void removeFriend(ApplicationUser userToRemove)
+        public async Task<FriendshipStatus> RemoveFriend(ApplicationUser userToRemove)
         {
             var requestFromUser = _dbContext.Friendships.Find(user.Id, userToRemove.Id);
             var requestToUser = _dbContext.Friendships.Find(userToRemove.Id, user.Id);
             requestToUser.Status = FriendshipStatus.Pending;
             _dbContext.Friendships.Remove(requestFromUser);
-            _dbContext.SaveChanges();
+            await _dbContext.SaveChangesAsync();
+            return FriendshipStatus.NotExist;
         }
 
     }

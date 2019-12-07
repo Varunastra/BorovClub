@@ -1,0 +1,36 @@
+﻿@using BorovClub.Models;
+@using BorovClub.Data;  
+@implements IDisposable;
+@inject IJSRuntime JSruntime;
+@inject NavigationManager navManager;
+@inject ConnectionService service;
+@inject AlertService alertService;
+@inject FriendshipService friendshipService;
+
+@code{
+    [Parameter]
+    public string Username { get; set; }
+    private string connectionId;
+
+    protected override void OnInitialized()
+    {
+        connectionId = service.GetConnectionId();
+        ConnectionManager.AddOn<Friendship>(Username, connectionId, OnRequestSent);
+    }
+
+    private async Task OnRequestSent(Friendship request)
+    {
+        alertService.ShowMessage(request, "Added you to friends");
+        friendshipService.FriendshipsQuery[request.Sender.UserName] = request;
+        await InvokeAsync(() =>
+        {
+            StateHasChanged();
+        });
+        await JSruntime.InvokeVoidAsync("playAlert");
+    }
+
+    public void Dispose()
+    {
+        ConnectionManager.RemoveOn<Friendship>(Username, connectionId, OnRequestSent);
+    }
+}

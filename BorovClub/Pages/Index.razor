@@ -1,5 +1,25 @@
-﻿@page "/"
+﻿@inject NavigationManager navManager
+@page "/"
 
-<h1>Hello, world!</h1>
+<h2>Welcome to Social Network BorovClub, Register Now and Start Chatting!</h2>
 
-Welcome to your new app.
+<p>
+    It showed a lady fitted out with a fur hat and fur boa who sat upright, raising a heavy fur muff that covered the whole of 
+    her lower arm towards the viewer. Gregor then turned to look out the window at the dull weather. Drops of rain could be heard hitting the pane,
+    your subordinates from up there, especially when you have to go right up close because the boss is hard of hearing. Well, there's
+</p>
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authState { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await authState;
+
+        if (state.User.Identity.IsAuthenticated)
+        {
+            navManager.NavigateTo("/" + state.User.Identity.Name);
+        }
+    }
+}

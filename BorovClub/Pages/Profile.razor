@@ -1,46 +1,65 @@
 ﻿@page  "/{Username}"
 @using BorovClub.Models;
 @using BorovClub.Data;
-@using Microsoft.EntityFrameworkCore;
 @inject AccountService service;
 @inject FriendshipService friendsService;
 
-<div class="profile-background"></div>
 @if (user != null)
 {
     <div class="profile">
-        <img class="avatar" src="@user.AvatarPath" />
-        <div>@user.FirstName</div>
-        <div>@user.LastName</div>
-        <div class="user-friends">
-            @*@foreachs (ApplicationUser friend in user.FriendsList)
-            {
-                <div>@friend.FirstName @friend.LastName</div>
-                <img src="@friend.AvatarPath" />
-            }*@
+        <div class="blue-container">
+
         </div>
-        <div></div>
-        <div></div>
+
+        <div class="profile-avatar"><img src="@user.AvatarPath" /></div>
+
+        <div class="white-container">
+            <div class="short-summary">
+                <div>@user.FirstName @user.LastName</div>
+                <div>@user.UserName</div>
+            </div>
+            <hr class="details-separator"/>
+            <div class="user-about">
+
+            </div>
+        </div>
         <AuthorizeView>
             <Authorized>
-                @switch (friendStatus)
-                {
-                    case FriendshipStatus.NotExist:
-                        <button @onclick="@onAddClicked">Add To Friends</button>
-                        break;
-                    case FriendshipStatus.Approved:
-                        <div>You are already friends</div>
-                        <div>
-                            <button @onclick="@onRemoveClicked">Remove Friend</button>
-                        </div>
-                        break;
-                    case FriendshipStatus.Pending:
-                        <div>Request sent</div>
-                        break;
-                    default:
-                        break;
-                }
-                <div class="send-message"><a href="@("messages/" + Username)">Send Message</a></div>
+                <div class="user-friends">
+                </div>
+                <div class="actions-bar">
+                    <div class="actions">
+                        @if (Username != CurrentUser)
+                        {
+                            @switch (friendStatus)
+                            {
+                                case FriendshipStatus.NotExist:
+                                    <div class="action">
+                                        <button @onclick="@onAddClicked" class="action-button">Add Friend</button>
+                                    </div>
+                                    break;
+                                case FriendshipStatus.Approved:
+                                    <div class="action">
+                                        <button @onclick="@onRemoveClicked" class="action-button">Remove Friend</button>
+                                    </div>
+                                    break;
+                                case FriendshipStatus.Pending:
+                                    <div class="action">
+                                        <div class="requst-sent">Request Sent</div>
+                                    </div>
+                                    break;
+                                default:
+                                    break;
+                            }
+                            <div class="action">
+                                <a href="@("messages/" + Username)" class="action-button">Send Message</a>
+                            </div>
+                            <div class="status-bar">
+
+                            </div>
+                        }
+                    </div>
+                </div>
             </Authorized>
         </AuthorizeView>
     </div>
@@ -54,26 +73,38 @@ else
     [Parameter]
     public string Username { get; set; }
 
+    [CascadingParameter]
+    public Task<AuthenticationState> authState { get; set; }
+
+    public string CurrentUser { get; set; }
+
     private ApplicationUser user;
     private FriendshipStatus friendStatus;
-    private string messageUrl;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        user = service.getUser(Username);
-        if (user != null)
+        var state = await authState;
+        CurrentUser = state.User.Identity.Name;
+        user = service.GetUser(Username);
+        if (user != null && CurrentUser != Username)
         {
-            friendStatus = friendsService.getFriendshipStatus(user);
+            friendStatus = friendsService.GetFriendshipStatus(user);
         }
     }
 
-    public void onAddClicked()
+    public async Task onAddClicked()
     {
-        friendsService.addFriend(user);
+        friendStatus = await friendsService.AddFriend(user);
+        await InvokeAsync(() =>
+            StateHasChanged()
+        );
     }
 
-    public void onRemoveClicked()
+    public async Task onRemoveClicked()
     {
-        friendsService.removeFriend(user);
+        friendStatus = await friendsService.RemoveFriend(user);
+        await InvokeAsync(() =>
+            StateHasChanged()
+        );
     }
 }

@@ -1,38 +1,82 @@
 ﻿@page "/login"
 @using BorovClub.Models;
+@using Microsoft.Extensions.Configuration;
 @inject AccountService service;
 @inject IJSRuntime JsRuntime;
+@inject NavigationManager navManager;
+@inject IConfiguration configuration;
 
-<EditForm Model="@model" class="account-container" OnValidSubmit="@HandleValidSubmit">
-    <div class="login-text">Login</div>
-    <div><InputText class="login-input" @bind-Value="@model.UserName" /></div>
-    <div class="login-password">Password</div>
-    <div><InputText type="password" @bind-Value="@model.Password" /></div>
-    <div><button type="submit">Login</button></div>
-    @if (error)
-    {
-    <div class="validation-message">Wrong username or password</div>
-    }
-</EditForm>
+   @if (showNormal)
+   {
+    <div class="outer-container">
+        <EditForm Model="@model"OnValidSubmit="@HandleValidSubmit" class="account-container">
+            <div class="login-text">Login</div>
+            <div><InputText class="login-input" @bind-Value="@model.UserName" /></div>
+            <div class="login-password">Password</div>
+            <div><InputText type="password" @bind-Value="@model.Password" /></div>
+            <div><button type="submit">Login</button></div>
+            @if (error)
+            {
+                <div class="validation-message">Wrong username or password</div>
+            }
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+        </EditForm>
+        <button @onclick="@GoogleAuth">Auth throught Google</button>
+    </div>
+   }
+   else
+   {
+       <TotpAuth model="@model"/>
+   }
 
 @code {
     UserLogin model = new UserLogin();
     private string token;
     public bool error = false;
+    private bool showNormal = true;
 
     private async void HandleValidSubmit()
     {
         await JsRuntime.InvokeVoidAsync("openLoadingModal");
-        token = await service.userLogin(model);
-        if (token != null)
+        var authorizeMethod = await service.GetAuthorizeMethod(model);
+
+        switch (authorizeMethod)
         {
-            await JsRuntime.InvokeAsync<string>("setCookieAuth", token);
+            case AuthorizeMethod.Normal:
+                {
+                    token = await service.UserLogin(model);
+                    if (token != null)
+                    {
+                        await JsRuntime.InvokeAsync<string>("setToken", token);
+                    }
+                    else
+                    {
+                        error = true;
+                    }
+                    break;
+                }
+            case AuthorizeMethod.TwoFactor:
+                {
+                    showNormal = false;
+                    break;
+                }
+            case AuthorizeMethod.Error:
+                {
+                    error = true;
+                    break;
+                }
+
         }
-        else
-        {
-            await JsRuntime.InvokeVoidAsync("closeLoadingModal");
-            error = true;
-            StateHasChanged();
-        }
+        await JsRuntime.InvokeVoidAsync("closeLoadingModal");
+        StateHasChanged();
     }
+
+    void GoogleAuth()
+    {
+        var ClientID = configuration["Google:ClientID"];
+        var ClientSecret = configuration["Google:ClientSecret"];
+        navManager.NavigateTo($"https://accounts.google.com/o/oauth2/auth?client_id={ClientID}&response_type=code&scope=https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email&redirect_uri=https://borovclub.com/oauth");
+    }
+
 }

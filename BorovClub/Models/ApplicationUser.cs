@@ -17,6 +17,7 @@ namespace BorovClub.Models
         public bool Gender { get; set; }
         public string Country { get; set; }
         public bool Online { get; set; }
+        public string TotpSecret { get; set; }
 
         //public virtual ICollection<Message> Messages { get; set; }
     }

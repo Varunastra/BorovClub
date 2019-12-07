@@ -1,0 +1,124 @@
+﻿@page "/messages/{Reciever}"
+@using BorovClub.Data;
+@using BorovClub.Models;
+@inject IJSRuntime JSruntime;
+@inject MessageService service;
+@inject ConnectionService connectionService;
+@implements IDisposable;
+<AuthorizeView>
+    <Authorized>
+        <div class="chat-window">
+            <h3>Chat with @Reciever</h3>
+            <div id="chat" class="all-messages">
+                @if (messages != null)
+                {
+                    <div class="messages">
+                        @foreach (Message msg in messages)
+                        {
+                            <div class="message-box">
+                                <div class="avatar"><img src="@msg.Sender.AvatarPath" /></div>
+                                <div class="sender-info">
+                                    <div class="message-sender">
+                                        <strong>@msg.Sender.UserName</strong>
+                                        <span>@msg.When.ToString("H:mm")</span>
+                                    </div>
+                                    <div class="last-message">@msg.Text</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+            <input type="text" @bind="@Message" id="msg-input" />
+            <input type="button" value="Send" class="send-btn" id="msg-btn" />
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <h1>Authorize first</h1>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    [Parameter]
+    public string Reciever { get; set; }
+
+    [CascadingParameter]
+    public Task<AuthenticationState> authState { get; set; }
+
+    private AuthenticationState state;
+
+    string Message = "";
+    List<Message> messages;
+    private string connectionId;
+
+    private int currentPage = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        state = await authState;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (state.User.Identity.IsAuthenticated)
+            {
+                messages = service.ViewMessages(Reciever);
+                service.SetMessagesAsRead(Reciever);
+                connectionId = connectionService.GetConnectionId();
+                ConnectionManager.AddOn<Message>(state.User.Identity.Name, connectionId, NotifyChange);
+                JSruntime.InvokeVoidAsync("chatEvents", DotNetObjectReference.Create(this));
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task NotifyChange(Message message)
+    {
+        if (message.Sender.UserName == Reciever)
+        {
+            service.SetMessageAsRead(message);
+            await InvokeAsync(() =>
+            {
+                messages.Add(message);
+                StateHasChanged();
+            });
+        }
+    }
+
+    [JSInvokable]
+    public void SendMessage(string messageText)
+    {
+        if (!String.IsNullOrEmpty(messageText))
+        {
+            var message = service.CreateMessage(Reciever, messageText);
+            service.QueryMesssages[Reciever] = message;
+            messages.Add(message);
+            StateHasChanged();
+            service.SendMessage(message);
+        }
+    }
+
+    [JSInvokable]
+    public bool OnChatUp()
+    {
+        var newMessages = service.ViewMessages(Reciever, currentPage++);
+        if (newMessages.Any())
+        {
+            messages.InsertRange(0, newMessages);
+            StateHasChanged();
+            return false;
+        }
+        return true;
+    }
+
+    public void Dispose()
+    {
+        if (state.User.Identity.IsAuthenticated)
+        {
+            service.SetMessagesAsRead(Reciever);
+        }
+        ConnectionManager.RemoveOn<Message>(state.User.Identity.Name, connectionId, NotifyChange);
+    }
+}

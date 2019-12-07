@@ -6,7 +6,12 @@ using System.Threading.Tasks;
 
 namespace BorovClub.Models
 {
-    public class Message
+    public enum MessageStatus
+    {
+        Unread,
+        Read
+    }
+    public partial class Message
     {
         public int MessageId { get; set; }
         public string SenderId { get; set; }
@@ -15,5 +20,11 @@ namespace BorovClub.Models
         public DateTime When { get; set; }
         public string RecieverId { get; set; }
         public virtual ApplicationUser Reciever { get; set; }
+        public MessageStatus Status { get; set; }
+        public bool EmailSent { get; set; }
+    }
+
+    public partial class Message : IAlertHelper
+    {
     }
 }

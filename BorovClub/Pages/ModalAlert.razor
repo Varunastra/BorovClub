@@ -1,0 +1,26 @@
+﻿@using BorovClub.Models.Toasts;
+
+<div class="modal-message">
+    <div class="modal-close" @onclick=@Close><i class="fa fa-times" aria-hidden="true"></i></div>
+    <div class="avatar"><img src="@Info.Avatar" /></div>
+    <div class="container">
+        <a class="modal-name" href="@("/messages/" + Info.SenderURL)">@Info.Heading</a>
+        <div class="modal-text">@Info.Message</div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public ToastInfo Info { get; set; }
+
+    [Parameter] 
+    public Guid ToastId { get; set; }
+
+    [CascadingParameter]
+    public ModalAlerts ToastsContainer { get; set; }
+
+    private void Close()
+    {
+        ToastsContainer.RemoveToast(ToastId);
+    }
+}

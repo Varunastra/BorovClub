@@ -1,29 +1,99 @@
 ﻿@page "/messages"
 @using BorovClub.Data;
 @using BorovClub.Models;
+@using Microsoft.Extensions.Logging;
 @inject MessageService service;
+@inject ConnectionService connectionService;
+@inject ILogger<Messages> logger;
+@implements IDisposable;
 
-<h2>Messages</h2>
-@if (messages != null)
+<h2>Chats</h2>
+@if (chats != null)
 {
-    <div class="messages">
-        @foreach (Message msg in messages)
+    <div class="chats">
+        @foreach (Chat chat in chats)
         {
-            <div class="message-box">
-                <div class="sender-info">
-                    <div class="message-sender">@msg.Sender.UserName</div>
-                    <div class="avatar"><img src="@msg.Sender.AvatarPath" /></div>
+        <div class="chat-box">
+            <a href="@("/messages/" + chat.Sender.UserName)">
+                <img class="participiant-avatar" src="@chat.Sender.AvatarPath" />
+            </a>
+            <div class="participiant-container">
+                <a href="@("/messages/" + chat.Sender.UserName)" class="participiant">@chat.Sender.FirstName @chat.Sender.LastName</a>
+                <div class="@GetMessageStyle(chat.LastMessage.Status)">
+                    <img class="avatar" src="@chat.LastMessage.Sender.AvatarPath" />
+                    <div class="last-message">@chat.LastMessage.Text</div>
                 </div>
-                <div class="last-message">@msg.Text</div>
             </div>
+        </div>
         }
     </div>
 }
 
 @code {
-    private ICollection<Message> messages;
-    protected override void OnInitialized()
+    [CascadingParameter]
+    public Task<AuthenticationState> authState { get; set; }
+
+    private IList<Chat> chats;
+    string username, connectionId;
+    AuthenticationState state;
+
+    protected override async Task OnInitializedAsync()
     {
-        messages = service.viewMessages();
+        state = await authState;
+    }
+
+    string GetMessageStyle(MessageStatus status)
+    {
+        var normalClass = "message-info";
+        if (status == MessageStatus.Unread)
+        {
+            return normalClass + " unread";
+        }
+        return normalClass;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (state.User.Identity.IsAuthenticated)
+            {
+                chats = service.ViewChats();
+
+                logger.LogInformation("MessageQuery Count:" + service.QueryMesssages.Count);
+                foreach (var chat in chats)
+                {
+                    if (service.QueryMesssages.TryGetValue(chat.Sender.UserName, out var msg))
+                    {
+                        chat.LastMessage = msg;
+                    }
+                }
+
+                username = state.User.Identity.Name;
+                connectionId = connectionService.GetConnectionId();
+                ConnectionManager.AddOn<Chat>(username, connectionId, OnMessage);
+                StateHasChanged();
+            }
+        }
+    }
+
+    async Task OnMessage(Chat chat)
+    {
+        await InvokeAsync(() =>
+        {
+            foreach (var chat in chats)
+            {
+                if (service.QueryMesssages.TryGetValue(chat.Sender.UserName, out var msg))
+                {
+                    chat.LastMessage = msg;
+                }
+            }
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        ConnectionManager.RemoveOn<Chat>(username, connectionId, OnMessage);
     }
 }

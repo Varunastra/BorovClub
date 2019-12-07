@@ -1,4 +1,5 @@
 ﻿@inherits LayoutComponentBase
+@using BorovClub.Pages;
 
 @*<div class="sidebar">
     <NavMenu />
@@ -18,8 +19,6 @@
                 </button>
             </div>
         </div>
-        <div class="profile">
-        </div>
         <div class="user-links">
             <LoginDisplay />
             <a href="https://docs.microsoft.com/en-us/aspnet/" target="_blank">About</a>
@@ -38,4 +37,11 @@
             @Body
         </div>
     </div>
+    <AuthorizeView>
+        <Authorized>
+            <MessageAlert Username="@context.User.Identity.Name" />
+            <RequestAlert Username="@context.User.Identity.Name" />
+            <ModalAlerts />
+        </Authorized>
+    </AuthorizeView>
 </main>

@@ -1,9 +1,11 @@
-function setCookieAuth(token) {
-    document.cookie = "token=" + token + "; Path=/;";
+function setToken(token) {
+    localStorage.setItem("token", token);
     document.location.href = "/";
 }
 
-function cookieLogout() {
-    document.cookie = "token=; Path=/;"
+function removeToken() {
+    if (localStorage.getItem("token")) {
+        localStorage.removeItem("token");
+    }
     document.location.href = "/";
 }
