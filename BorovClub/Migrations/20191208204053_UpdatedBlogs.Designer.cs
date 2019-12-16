@@ -3,15 +3,17 @@ using System;
 using BorovClub.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace BorovClub.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20191208204053_UpdatedBlogs")]
+    partial class UpdatedBlogs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -113,9 +115,9 @@ namespace BorovClub.Migrations
                     b.ToTable("AspNetUsers");
                 });
 
-            modelBuilder.Entity("BorovClub.Models.BlogRecord", b =>
+            modelBuilder.Entity("BorovClub.Models.Blog", b =>
                 {
-                    b.Property<int>("BlogRecordId")
+                    b.Property<int>("BlogId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
@@ -126,9 +128,9 @@ namespace BorovClub.Migrations
                     b.Property<string>("Text")
                         .HasColumnType("text");
 
-                    b.HasKey("BlogRecordId");
+                    b.HasKey("BlogId");
 
-                    b.ToTable("BlogsRecords");
+                    b.ToTable("Blogs");
                 });
 
             modelBuilder.Entity("BorovClub.Models.Chat", b =>
@@ -402,7 +404,7 @@ namespace BorovClub.Migrations
 
             modelBuilder.Entity("BorovClub.Models.UsersBlogs", b =>
                 {
-                    b.HasOne("BorovClub.Models.BlogRecord", "Blog")
+                    b.HasOne("BorovClub.Models.Blog", "Blog")
                         .WithMany()
                         .HasForeignKey("BlogId")
                         .OnDelete(DeleteBehavior.Restrict)

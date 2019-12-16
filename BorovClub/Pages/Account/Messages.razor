@@ -5,6 +5,7 @@
 @inject MessageService service;
 @inject ConnectionService connectionService;
 @inject ILogger<Messages> logger;
+@*@inject ConnectionManagerService connectionsService;*@
 @implements IDisposable;
 
 <h2>Chats</h2>
@@ -34,7 +35,6 @@
     public Task<AuthenticationState> authState { get; set; }
 
     private IList<Chat> chats;
-    string username, connectionId;
     AuthenticationState state;
 
     protected override async Task OnInitializedAsync()
@@ -69,9 +69,7 @@
                     }
                 }
 
-                username = state.User.Identity.Name;
-                connectionId = connectionService.GetConnectionId();
-                ConnectionManager.AddOn<Chat>(username, connectionId, OnMessage);
+                connectionService.AddOn<Chat>(OnMessage);
                 StateHasChanged();
             }
         }
@@ -81,12 +79,14 @@
     {
         await InvokeAsync(() =>
         {
-            foreach (var chat in chats)
+            var currentChat = chats.FirstOrDefault(c => c.Sender.UserName == chat.Sender.UserName);
+            if (service.QueryMesssages.TryGetValue(chat.Sender.UserName, out var msg) && currentChat != null)
             {
-                if (service.QueryMesssages.TryGetValue(chat.Sender.UserName, out var msg))
-                {
-                    chat.LastMessage = msg;
-                }
+                currentChat.LastMessage = msg;
+            }
+            else
+            {
+                chats.Add(chat);
             }
             StateHasChanged();
         });
@@ -94,6 +94,6 @@
 
     public void Dispose()
     {
-        ConnectionManager.RemoveOn<Chat>(username, connectionId, OnMessage);
+        connectionService.RemoveOn<Chat>(OnMessage);
     }
 }

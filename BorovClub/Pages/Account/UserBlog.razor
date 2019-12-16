@@ -1,0 +1,70 @@
+﻿@using BorovClub.Data;
+@using BorovClub.Models;
+@inject BlogService blogService;
+
+<div class="blog">
+    <h3 class="title">Blog</h3>
+
+    @if (displayWritter)
+    {
+        <form @onsubmit=@ApplyClicked class="blog-write">
+            <textarea @bind=@blogText></textarea>
+            <button type="submit">Submit</button>
+        </form>
+    }
+    @if (blogs != null)
+    {
+        @foreach (var blog in blogs)
+        {
+            <div class="blog-item">
+                <div class="blog-heading">
+                    <div class="avatar"><img src="@User.AvatarPath" /></div>
+                    <div class="blog-item-header">
+                        <a class="blog-author" href="@("/" + User.UserName)">@User.FirstName  @User.LastName</a>
+                        <div class="blog-past-time">
+                            <i class="fa fa-clock-o" aria-hidden="true"></i>
+                            @blog.PublicationDate
+                        </div>
+                    </div>
+                </div>
+                <div class="blog-content">
+                    @blog.Text
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {     
+    private string blogText;
+
+    [CascadingParameter]
+    public Task<AuthenticationState> authState { get; set; }
+
+    [Parameter]
+    public ApplicationUser User { get; set; }
+
+    private List<BlogRecord> blogs;
+    private bool displayWritter = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await authState;
+
+        if (User.UserName == state.User.Identity.Name)
+        {
+            displayWritter = true;
+        }
+
+        if (state.User.Identity.IsAuthenticated)
+        {
+            blogs = blogService.GetBlogs(User.UserName);
+        }
+    }
+
+    private void ApplyClicked()
+    {
+        blogService.ApplyBlog(blogText);
+        blogs.Add(new BlogRecord { Text = blogText, PublicationDate = DateTime.UtcNow });
+    }
+}

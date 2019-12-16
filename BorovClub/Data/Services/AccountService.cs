@@ -28,10 +28,10 @@ namespace BorovClub
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IConfiguration _configuration;
         private readonly ApplicationDbContext _dbContext;
+
         public string OauthCode { get; set; }
    
-        public AccountService(UserManager<ApplicationUser> userManager, 
-            SignInManager<ApplicationUser> signInManager, IHttpContextAccessor httpContextAccessor,
+        public AccountService(UserManager<ApplicationUser> userManager, IHttpContextAccessor httpContextAccessor,
             IConfiguration configuration, ApplicationDbContext dbContext)
         {
             _userManager = userManager;

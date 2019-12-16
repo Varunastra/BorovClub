@@ -9,5 +9,6 @@ namespace BorovClub.Data
         public Func<Message, Task> NotifyMessage;
         public Func<Friendship, Task> NotifyRequest;
         public Func<Chat, Task> NotifyChat;
+        public Func<UsersBlogs, Task> NotifyBlog;
     }
 }

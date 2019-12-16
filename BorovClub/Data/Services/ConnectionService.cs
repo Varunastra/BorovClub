@@ -1,44 +1,74 @@
 ﻿using BorovClub.Models;
-using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace BorovClub.Data
 {
-    public static class ConnectionManager
+    public class ConnectionService
     {
-        private static ConcurrentDictionary<string, ConcurrentDictionary<string, AlertHelper>> Connections { get; set; } =
-            new ConcurrentDictionary<string, ConcurrentDictionary<string, AlertHelper>>();
+        private readonly IHttpContextAccessor _context;
+        private readonly ConnectionManagerService _connectionManagerService;
 
-        public static void AddConnection(string Username, string ConnectionId)
+        public string ConnectionId { get; set; }
+        public string UserName { get; set; }
+
+        public ConcurrentDictionary<string, ConcurrentDictionary<string, AlertHelper>> Connections { get; set; }
+
+        public ConnectionService(IHttpContextAccessor context, ConnectionManagerService connectionManagerService)
         {
-            if (!Connections.TryGetValue(Username, out ConcurrentDictionary<string, AlertHelper> user))
+            _context = context;
+            _connectionManagerService = connectionManagerService;
+            //Connections = _connectionManagerService.Connections;
+            //ConnectionId = _context.HttpContext.Request.Query["id"];
+        }
+
+        private string GetConnectionId()
+        {
+            return _context.HttpContext.Request.Query["id"];
+        }
+
+        private string GetUserName()
+        {
+            return _context.HttpContext.User.Identity.Name;
+        }
+
+        public void AddConnection()
+        {
+            Connections = _connectionManagerService.Connections;
+
+            ConnectionId = GetConnectionId();
+            UserName = GetUserName();
+
+            if (!Connections.TryGetValue(UserName, out ConcurrentDictionary<string, AlertHelper> user))
             {
                 var currentUser = new ConcurrentDictionary<string, AlertHelper>();
                 currentUser.TryAdd(ConnectionId, new AlertHelper());
-                Connections.TryAdd(Username, currentUser);
+                Connections.TryAdd(UserName, currentUser);
             }
             else
             {
-                var currentUser = Connections[Username];
+                var currentUser = Connections[UserName];
                 currentUser.TryAdd(ConnectionId, new AlertHelper());
             }
         }
 
-        public static void RemoveConnection(string Username, string ConnectionId)
+        public void RemoveConnection()
         {
-            if (!Connections.TryGetValue(Username, out ConcurrentDictionary<string, AlertHelper> user))
+            if (Connections.TryGetValue(UserName, out ConcurrentDictionary<string, AlertHelper> user))
             {
-                Connections[Username].TryRemove(ConnectionId, out AlertHelper helper);
-                if (Connections[Username].IsEmpty)
+                Connections[UserName].TryRemove(ConnectionId, out AlertHelper helper);
+                if (Connections[UserName].IsEmpty)
                 {
-                    Connections.TryRemove(Username, out user);
+                    Connections.TryRemove(UserName, out user);
                 }
             }
         }
-        public static bool Alert<T>(T alert) where T: IAlertHelper
+        public bool Alert<T>(T alert) where T : IMessageReciever, IMessageSender
         {
             ConcurrentDictionary<string, AlertHelper> user = new ConcurrentDictionary<string, AlertHelper>();
 
@@ -71,7 +101,7 @@ namespace BorovClub.Data
             }
         }
 
-        public static bool AddOn<T>(string Username, string ConnectionId, Func<T, Task> handle)
+        public bool AddOn<T>(Func<T, Task> handle)
         {
             ConcurrentDictionary<string, AlertHelper> user = new ConcurrentDictionary<string, AlertHelper>();
 
@@ -85,6 +115,9 @@ namespace BorovClub.Data
                 },
                 {
                     typeof(Chat), () => user[ConnectionId].NotifyChat += (dynamic)handle
+                },
+                {
+                    typeof(UsersBlogs), () => user[ConnectionId].NotifyBlog += (dynamic)handle
                 }
             };
 
@@ -92,7 +125,7 @@ namespace BorovClub.Data
 
             try
             {
-                if (Connections.TryGetValue(Username, out user))
+                if (Connections.TryGetValue(UserName, out user))
                 {
                     addHandle();
                 }
@@ -104,7 +137,7 @@ namespace BorovClub.Data
             }
         }
 
-        public static bool RemoveOn<T>(string Username, string ConnectionId, Func<T, Task> handle)
+        public bool RemoveOn<T>(Func<T, Task> handle)
         {
             ConcurrentDictionary<string, AlertHelper> user = new ConcurrentDictionary<string, AlertHelper>();
 
@@ -118,6 +151,9 @@ namespace BorovClub.Data
                     },
                     {
                         typeof(Chat), () => user[ConnectionId].NotifyChat -= (dynamic) handle
+                    },
+                    { 
+                        typeof(UsersBlogs), () => user[ConnectionId].NotifyBlog -= (dynamic) handle
                     }
              };
 
@@ -125,7 +161,7 @@ namespace BorovClub.Data
 
             try
             {
-                if (Connections.TryGetValue(Username, out user))
+                if (Connections.TryGetValue(UserName, out user))
                 {
                     removeHandle();
                 }
@@ -138,10 +174,18 @@ namespace BorovClub.Data
             }
         }
 
-
-        public static ConcurrentDictionary<string, ConcurrentDictionary<string, AlertHelper>> GetConnections()
-        {
-            return Connections;
+        public void AlertFriends(IList<ApplicationUser> friends, UsersBlogs record)
+        { 
+            foreach (var friend in friends)
+            {
+                if (Connections.TryGetValue(friend.UserName, out var connectionIds))
+                {
+                    foreach (var connectionId in connectionIds)
+                    {
+                        connectionId.Value.NotifyBlog?.Invoke(record);
+                    }
+                }
+            }
         }
     }
 }

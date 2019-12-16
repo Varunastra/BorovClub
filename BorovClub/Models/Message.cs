@@ -24,7 +24,7 @@ namespace BorovClub.Models
         public bool EmailSent { get; set; }
     }
 
-    public partial class Message : IAlertHelper
+    public partial class Message : IMessageSender, IMessageReciever
     {
     }
 }

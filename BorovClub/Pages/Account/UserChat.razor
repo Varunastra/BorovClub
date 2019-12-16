@@ -5,6 +5,7 @@
 @inject MessageService service;
 @inject ConnectionService connectionService;
 @implements IDisposable;
+
 <AuthorizeView>
     <Authorized>
         <div class="chat-window">
@@ -49,7 +50,6 @@
 
     string Message = "";
     List<Message> messages;
-    private string connectionId;
 
     private int currentPage = 1;
 
@@ -66,8 +66,8 @@
             {
                 messages = service.ViewMessages(Reciever);
                 service.SetMessagesAsRead(Reciever);
-                connectionId = connectionService.GetConnectionId();
-                ConnectionManager.AddOn<Message>(state.User.Identity.Name, connectionId, NotifyChange);
+                connectionService.AddConnection();
+                connectionService.AddOn<Message>(NotifyChange);
                 JSruntime.InvokeVoidAsync("chatEvents", DotNetObjectReference.Create(this));
                 StateHasChanged();
             }
@@ -118,7 +118,8 @@
         if (state.User.Identity.IsAuthenticated)
         {
             service.SetMessagesAsRead(Reciever);
+            connectionService.RemoveOn<Message>(NotifyChange);
+            connectionService.RemoveConnection();
         }
-        ConnectionManager.RemoveOn<Message>(state.User.Identity.Name, connectionId, NotifyChange);
     }
 }

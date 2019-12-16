@@ -15,7 +15,7 @@ namespace BorovClub.Models
         public virtual Message LastMessage { get; set; }
     }
 
-    public partial class Chat: IAlertHelper
+    public partial class Chat: IMessageSender, IMessageReciever
     {
 
     }

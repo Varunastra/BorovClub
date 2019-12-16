@@ -16,14 +16,17 @@ namespace BorovClub.Data
         private readonly ApplicationDbContext _dbContext;
         private readonly ApplicationUser user;
         private readonly ILogger<FriendshipService> _logger;
+        private readonly ConnectionService _connectionService;
 
         public Dictionary<string, Friendship> FriendshipsQuery = new Dictionary<string, Friendship>();
 
-        public FriendshipService(IHttpContextAccessor httpContext, ApplicationDbContext dbContext, ILogger<FriendshipService> logger)
+        public FriendshipService(IHttpContextAccessor httpContext, ApplicationDbContext dbContext, ILogger<FriendshipService> logger,
+            ConnectionService connectionService)
         {
             _httpContext = httpContext;
             _dbContext = dbContext;
             _logger = logger;
+            _connectionService = connectionService;
             var userClaim = _httpContext.HttpContext.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
             if (userClaim != null)
             {
@@ -44,7 +47,7 @@ namespace BorovClub.Data
             _dbContext.Friendships.Add(friendship);
             await _dbContext.SaveChangesAsync();
 
-            ConnectionManager.Alert(friendship);
+            _connectionService.Alert(friendship);
 
             return friendship.Status;
         }

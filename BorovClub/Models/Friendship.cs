@@ -30,7 +30,7 @@ namespace BorovClub.Models
 
     }
 
-    public partial class Friendship : IAlertHelper
+    public partial class Friendship : IMessageSender, IMessageReciever
     {
     }
 }

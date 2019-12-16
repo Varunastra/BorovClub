@@ -5,16 +5,8 @@ using System.Threading.Tasks;
 
 namespace BorovClub.Models
 {
-    public enum AlertType
-    {
-        Friendship,
-        Blog,
-        Message
-    }
-    public interface IAlertHelper
+    public interface IMessageReciever
     {
         public ApplicationUser Reciever { get; set; }
-
-        public ApplicationUser Sender { get; set; }
     }
 }

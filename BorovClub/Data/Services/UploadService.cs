@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using BorovClub.Models;
+using Microsoft.Extensions.Logging;
 
 namespace BorovClub.Data
 {
@@ -17,14 +18,16 @@ namespace BorovClub.Data
         private readonly ApplicationDbContext _dbContext;
         private readonly IHttpContextAccessor _context;
         private readonly IWebHostEnvironment _enviroment;
+        private readonly ILogger<UploadService> _logger;
 
 
         public UploadService(ApplicationDbContext dbContext, IHttpContextAccessor context,
-            IWebHostEnvironment enviroment)
+            IWebHostEnvironment enviroment, ILogger<UploadService> logger)
         {
             _dbContext = dbContext;
             _context = context;
             _enviroment = enviroment;
+            _logger = logger;
         }
 
         public async Task<IdentityResult> UploadAvatar(IFileListEntry[] files)
@@ -40,7 +43,9 @@ namespace BorovClub.Data
                 {
                     await file.Data.CopyToAsync(fileStream);
                 }
-                Console.WriteLine("NEW AVATAR ON" + path);
+
+                _logger.LogInformation("NEW AVATAR ON" + path);
+
                 user.AvatarPath = path;
                 var saved = false;
                 while (!saved)

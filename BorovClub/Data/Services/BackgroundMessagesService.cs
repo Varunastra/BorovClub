@@ -43,7 +43,7 @@ namespace BorovClub.Data
 
                     foreach (var message in unreadMessages)
                     {
-                        if ((currentTime - message.When).TotalMinutes >= 120)
+                        if ((currentTime - message.When).TotalMinutes >= 2000)
                         {
                             _logger.LogInformation("Message: " + message.Text + " From " + message.Sender.UserName + " To " + message.Reciever.UserName);
                             await SendEmailNotification(message);

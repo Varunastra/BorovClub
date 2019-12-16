@@ -4,13 +4,14 @@
 @using BorovClub.Models.Toasts;
 @inject AlertService alertService;
 
+
 @if (ToastList.Any())
 {
     <div class="toast-container">
         <CascadingValue Value=this>
             @foreach (var toast in ToastList.OrderBy(x => x.TimeStamp))
             {
-                <ModalAlert Info=@toast.ToastInfo ToastId=@toast.Id />
+                <ModalAlert Info=@toast.ToastInfo ToastId=@toast.Id/>
             }
         </CascadingValue>
     </div>
@@ -37,24 +38,33 @@
         });
     }
 
-    public void ShowToast(IAlertHelper alert, string message)
+    public void ShowToast(IMessageSender alert, AlertType alertType, string message)
     {
         InvokeAsync(() =>
         {
             if (ToastList.Count <= 4)
             {
-                var toast = new ToastInstance {
+
+                var toast = new ToastInstance
+                {
                     Id = Guid.NewGuid(),
                     TimeStamp = DateTime.Now,
-                    ToastInfo = new ToastInfo {
+                    ToastInfo = new ToastInfo
+                    {
                         Avatar = alert.Sender.AvatarPath,
                         Heading = alert.Sender.FirstName + " " + alert.Sender.LastName,
                         SenderURL = "/" + alert.Sender.UserName,
-                        Message = message
+                        Message = message,
+                        AlertType = alertType
                     }
                 };
 
-   
+                if (alertType == AlertType.Blog)
+                {
+                    toast.ToastInfo.Heading = String.Format("Your friend added new blog record");
+                }
+
+
                 ToastList.Add(toast);
 
                 var timeout = Timeout * 1000;

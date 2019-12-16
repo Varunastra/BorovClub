@@ -1,0 +1,34 @@
+﻿@using BorovClub.Data;
+@using BorovClub.Models;
+@implements IDisposable;
+@inject IJSRuntime JSruntime;
+@inject NavigationManager navManager;
+@inject ConnectionService connectionService;
+@inject MessageService messageService;
+@inject AlertService alertService;
+@*@inject ConnectionManagerService connectionService;*@
+
+@code {
+
+    protected override void OnInitialized()
+    {
+        connectionService.AddConnection();
+        connectionService.AddOn<UsersBlogs>(OnRecordRecieved);
+    }
+
+    private async Task OnRecordRecieved(UsersBlogs record)
+    {
+        await InvokeAsync(async () =>
+        {
+            alertService.ShowMessage(record, AlertType.Blog, record.Blog.Text);
+            StateHasChanged();
+            await JSruntime.InvokeVoidAsync("playAlert");
+        });
+    }
+
+    public void Dispose()
+    {
+        connectionService.RemoveOn<UsersBlogs>(OnRecordRecieved);
+        connectionService.RemoveConnection();
+    }
+}

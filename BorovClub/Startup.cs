@@ -86,7 +86,9 @@ namespace BorovClub
             services.AddScoped<FriendshipService>();
             services.AddScoped<MessageService>();
             services.AddScoped<UploadService>();
+            services.AddScoped<BlogService>();
             services.AddScoped<ConnectionService>();
+            services.AddSingleton<ConnectionManagerService>();
             services.AddHttpContextAccessor();
             services.AddHttpClient();
         }

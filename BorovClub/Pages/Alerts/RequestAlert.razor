@@ -3,24 +3,21 @@
 @implements IDisposable;
 @inject IJSRuntime JSruntime;
 @inject NavigationManager navManager;
-@inject ConnectionService service;
+@inject ConnectionService connectionService;
 @inject AlertService alertService;
 @inject FriendshipService friendshipService;
 
 @code{
-    [Parameter]
-    public string Username { get; set; }
-    private string connectionId;
 
     protected override void OnInitialized()
     {
-        connectionId = service.GetConnectionId();
-        ConnectionManager.AddOn<Friendship>(Username, connectionId, OnRequestSent);
+        connectionService.AddConnection();
+        connectionService.AddOn<Friendship>(OnRequestSent);
     }
 
     private async Task OnRequestSent(Friendship request)
     {
-        alertService.ShowMessage(request, "Added you to friends");
+        alertService.ShowMessage(request, AlertType.Friendship, "Added you to friends");
         friendshipService.FriendshipsQuery[request.Sender.UserName] = request;
         await InvokeAsync(() =>
         {
@@ -31,6 +28,7 @@
 
     public void Dispose()
     {
-        ConnectionManager.RemoveOn<Friendship>(Username, connectionId, OnRequestSent);
+        connectionService.RemoveOn<Friendship>(OnRequestSent);
+        connectionService.RemoveConnection();
     }
 }

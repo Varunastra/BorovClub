@@ -15,15 +15,17 @@ namespace BorovClub.Data
         private readonly ApplicationDbContext _dbContext;
         private const int Messages_size = 15;
         private Dictionary<string, Message> _messagesDictionary;
+        private readonly ConnectionService _connectionService;
 
         public Dictionary<string, Message> QueryMesssages { get { return _messagesDictionary; } set { _messagesDictionary = value; } }
-        public MessageService(IHttpContextAccessor httpContext, ApplicationDbContext dbContext)
+        public MessageService(IHttpContextAccessor httpContext, ApplicationDbContext dbContext, ConnectionService connectionService)
         {
             _httpContext = httpContext;
             _dbContext = dbContext;
             _messagesDictionary = new Dictionary<string, Message>();
-        }
-        public List<Message> ViewMessages(string opponent, int page = 1)
+            _connectionService = connectionService;
+    }
+    public List<Message> ViewMessages(string opponent, int page = 1)
         {
             var user = GetUser();
             var assocUser = _dbContext.Users.FirstOrDefault(u => u.UserName == opponent);
@@ -85,8 +87,8 @@ namespace BorovClub.Data
 
             _dbContext.SaveChangesAsync();
 
-            ConnectionManager.Alert(message);
-            ConnectionManager.Alert(chat1);
+            _connectionService.Alert(message);
+            _connectionService.Alert(chat1);
             QueryMesssages[message.Sender.UserName] = message;
         }
 
@@ -103,7 +105,7 @@ namespace BorovClub.Data
                     if (message.Status == MessageStatus.Unread)
                     {
                         message.Status = MessageStatus.Read;
-                        ConnectionManager.Alert(new Chat { Sender = message.Reciever, Reciever = message.Sender, LastMessage = message });
+                        _connectionService.Alert(new Chat { Sender = message.Reciever, Reciever = message.Sender, LastMessage = message });
                         QueryMesssages[message.Sender.UserName] = message;
                     }
                 }
@@ -115,7 +117,7 @@ namespace BorovClub.Data
         public void SetMessageAsRead(Message message)
         {
             message.Status = MessageStatus.Read;
-            ConnectionManager.Alert(new Chat { Sender = message.Reciever, Reciever = message.Sender, LastMessage = message });
+            _connectionService.Alert(new Chat { Sender = message.Reciever, Reciever = message.Sender, LastMessage = message });
             QueryMesssages[message.Sender.UserName] = message;
         }
     }

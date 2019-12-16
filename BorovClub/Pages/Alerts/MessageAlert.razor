@@ -1,24 +1,20 @@
 ﻿@using BorovClub.Data;
 @using BorovClub.Models;
-@using Blazored.Toast.Services;
 @implements IDisposable;
 @inject IJSRuntime JSruntime;
 @inject NavigationManager navManager;
-@inject ConnectionService service;
+@inject ConnectionService connectionService;
 @inject MessageService messageService;
 @inject AlertService alertService;
+@*@inject ConnectionManagerService connectionService;*@
 
 @code {
-    [Parameter]
-    public string Username { get; set; }
-    private string connectionId;
 
     protected override void OnInitialized()
     {
-        connectionId = service.GetConnectionId();
-        ConnectionManager.AddConnection(Username, connectionId);
-        ConnectionManager.AddOn<Message>(Username, connectionId, OnMessageSent);
-        ConnectionManager.AddOn<Chat>(Username, connectionId, OnMessageChange);
+        connectionService.AddConnection();
+        connectionService.AddOn<Message>(OnMessageSent);
+        connectionService.AddOn<Chat>(OnMessageChange);
     }
 
     private async Task OnMessageSent(Message message)
@@ -28,7 +24,7 @@
             messageService.QueryMesssages[message.Sender.UserName] = message;
             await InvokeAsync(async () =>
             {
-                alertService.ShowMessage(message, message.Text);
+                alertService.ShowMessage(message, AlertType.Message, message.Text);
                 StateHasChanged();
                 await JSruntime.InvokeVoidAsync("playAlert");
             });
@@ -43,6 +39,8 @@
 
     public void Dispose()
     {
-        ConnectionManager.RemoveConnection(Username, connectionId);
+        connectionService.RemoveOn<Message>(OnMessageSent);
+        connectionService.RemoveOn<Chat>(OnMessageChange);
+        connectionService.RemoveConnection();
     }
 }

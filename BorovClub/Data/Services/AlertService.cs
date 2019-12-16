@@ -8,11 +8,11 @@ namespace BorovClub.Data
 {
     public class AlertService
     {
-        public event Action<IAlertHelper, string> OnShow;
+        public event Action<IMessageSender, AlertType, string> OnShow;
 
-        public void ShowMessage(IAlertHelper alert, string message)
+        public void ShowMessage(IMessageSender alert, AlertType alertType, string message)
         {
-            OnShow?.Invoke(alert, message);
+            OnShow?.Invoke(alert, alertType, message);
         }
     }
 }

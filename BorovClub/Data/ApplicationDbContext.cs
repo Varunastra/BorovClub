@@ -19,6 +19,9 @@ namespace BorovClub.Data
 
         public DbSet<Chat> Chats { get; set; }
 
+        public DbSet<UsersBlogs> UsersBlogs { get; set; }
+        public DbSet<BlogRecord> BlogsRecords { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -70,6 +73,22 @@ namespace BorovClub.Data
                 .HasOne(c => c.LastMessage)
                 .WithMany()
                 .HasForeignKey(c => c.LastMessageId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<BlogRecord>().HasKey(b => b.BlogRecordId);
+
+            builder.Entity<UsersBlogs>().Ignore(u => u.Sender).Ignore(u => u.SenderId).HasKey(bu => new { bu.UserId, bu.BlogId });
+
+            builder.Entity<UsersBlogs>()
+                .HasOne(b => b.User)
+                .WithMany()
+                .HasForeignKey(b => b.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<UsersBlogs>()
+                .HasOne(b => b.Blog)
+                .WithMany()
+                .HasForeignKey(b => b.BlogId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }

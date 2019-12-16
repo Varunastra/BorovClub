@@ -11,6 +11,7 @@ namespace BorovClub.Models.Toasts
         public string Avatar { get; set; }
         public string SenderURL { get; set; }
         public string Message { get; set; }
+        public AlertType AlertType { get; set; }
     }
 
     public class ToastInstance

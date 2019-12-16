@@ -1,9 +1,8 @@
 ﻿@inherits LayoutComponentBase
+@using BorovClub.Pages.Alerts;
 @using BorovClub.Pages;
-
-@*<div class="sidebar">
-    <NavMenu />
-</div>*@
+@using BorovClub.Data;
+@inject ConnectionManagerService service;
 
 <header class="header">
     <div class="header-container">
@@ -39,8 +38,9 @@
     </div>
     <AuthorizeView>
         <Authorized>
-            <MessageAlert Username="@context.User.Identity.Name" />
-            <RequestAlert Username="@context.User.Identity.Name" />
+            <MessageAlert />
+            <RequestAlert />
+            <BlogAlert />
             <ModalAlerts />
         </Authorized>
     </AuthorizeView>
